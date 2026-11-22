@@ -544,12 +544,24 @@ function form() {
     });
     if (bad.length) { status.textContent = bad.length === 1 ? 'Revisa 1 campo.' : `Revisa ${bad.length} campos.`; bad[0].focus(); return; }
     const btn = $('button[type="submit"]', f); btn.disabled = true; status.textContent = 'Enviando…';
+    const data = new FormData(f);
+    // plan B: abre el correo del cliente con el mensaje ya escrito, para no perder ninguna petición
+    const viaMail = () => {
+      const get = n => (data.get(n) || '').toString().trim();
+      const body = [`Nombre: ${get('nombre')}`, `Correo: ${get('email')}`, `Teléfono: ${get('telefono') || '-'}`, `Negocio: ${get('negocio')}`, `Qué necesita: ${get('necesidad')}`, '', get('mensaje')].join('\n');
+      location.href = `mailto:${f.dataset.mail}?subject=${encodeURIComponent('Petición de presupuesto · ' + get('negocio'))}&body=${encodeURIComponent(body)}`;
+      status.textContent = 'Se ha abierto tu correo con el mensaje ya escrito: solo tienes que darle a enviar.';
+    };
     try {
-      const res = await fetch(f.dataset.endpoint, { method: 'POST', body: new FormData(f), headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(res.status);
+      if (!data.get('access_key')) { viaMail(); return; }
+      const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 12000);
+      const res = await fetch(f.dataset.endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json' }, signal: ctl.signal });
+      clearTimeout(timer);
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.success === false) throw new Error(json.message || res.status);
       f.reset(); status.textContent = 'Recibido. Te escribimos por correo con tu presupuesto.';
       gsap.fromTo(status, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .8, ease: EXPO });
-    } catch { status.textContent = 'No se ha podido enviar. Inténtalo de nuevo o escríbenos por correo.'; }
+    } catch { viaMail(); }
     finally { btn.disabled = false; }
   });
 }
