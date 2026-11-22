@@ -341,113 +341,146 @@ function iris() {
   gsap.to('.hero2__mark', { yPercent: -35, opacity: .2, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
   gsap.to('.hero2__slogan, .hero2__meta', { yPercent: -60, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
 }
-/* ---------------- portada: lámpara estilo Luxo, gira a cámara, zoom a la bombilla y paso a blanco ----------------
-   La cabeza se dibuja con geometría en cada fotograma (no con transformaciones), así nunca se separa del brazo.
-   face: 0 = de perfil mirando abajo a la izquierda · 1 = mirando de frente a cámara */
+/* ---------------- portada: lámpara estilo Luxo en 3D, gira a cámara, zoom a la bombilla y paso a blanco ----------------
+   La pantalla es una campana 3D (superficie de revolución) con su eje en el espacio; cada fotograma se proyecta
+   en el plano de la pantalla. Girar es cambiar el eje (az, el), así la perspectiva es real y nada se deforma.
+   az: 0 = mirando a cámara, negativo = hacia la izquierda · el: positivo = hacia abajo */
 let lampIntro = null;
 function lamp() {
   const hero = $('.hero2'), box = $('.lamp'); if (!hero || !box) return;
   const svg = $('svg', box), NS = 'http://www.w3.org/2000/svg';
   const q = c => $('.' + c, svg);
-  const body = q('lamp__body'), mouth = q('lamp__mouth'), rim = q('lamp__rim'), bulb = q('lamp__bulb'), glow = q('lamp__glow'), spec = q('lamp__spec');
-  const beam = q('lamp__beam'), pool = q('lamp__pool'), vents = q('lamp__vents'), springs = q('lamp__springs');
-  const beamGrad = $('#lm-beam', svg);
+  const body = q('lamp__body'), seam = q('lamp__seam'), vents = q('lamp__vents'), mouth = q('lamp__mouth'), rim = q('lamp__rim'), clip = q('lamp__clip');
+  const bulb = q('lamp__bulb'), glow = q('lamp__glow'), spec = q('lamp__spec'), beam = q('lamp__beam'), pool = q('lamp__pool'), springs = q('lamp__springs');
+  const beamGrad = $('#lm-beam', svg), shadeGrad = $('#lm-shade', svg);
   const flash = $('.lampflash', hero), topo = $('.topo', hero);
-  // muelles en espiral entre los brazos
   const coil = (x1, y1, x2, y2, n) => {
     const dx = x2 - x1, dy = y2 - y1, ang = Math.atan2(dy, dx) * 180 / Math.PI + 90;
     for (let i = 0; i <= n; i++) { const e = document.createElementNS(NS, 'ellipse'); const cx = x1 + dx * i / n, cy = y1 + dy * i / n; e.setAttribute('cx', cx); e.setAttribute('cy', cy); e.setAttribute('rx', 9); e.setAttribute('ry', 3.2); e.setAttribute('transform', `rotate(${ang} ${cx} ${cy})`); springs.append(e); }
   };
-  coil(403, 622, 427, 538, 13); coil(426, 413, 382, 349, 11);
-  const ventPath = document.createElementNS(NS, 'path'); ventPath.setAttribute('stroke', '#7f95b7'); ventPath.setAttribute('stroke-width', '5'); ventPath.setAttribute('stroke-linecap', 'round'); vents.append(ventPath);
+  if (!springs.childElementCount) { coil(403, 622, 427, 538, 13); coil(426, 413, 382, 349, 11); }
 
-  const H = [334, 278];
-  const lerp = (a, b, t) => a + (b - a) * t, clamp = gsap.utils.clamp(0, 1);
-  const norm = v => { const l = Math.hypot(v[0], v[1]) || 1; return [v[0] / l, v[1] / l]; };
-  const A0 = Math.atan2(.8, -.6), DF = norm([-.06, 1]);
-  const L = { face: 0, look: -.55, mouse: 0, on: 0 };
-  const P = (p, v, k) => [p[0] + v[0] * k, p[1] + v[1] * k];
-  const f = n => n.toFixed(1);
-  const geo = () => {
-    const a = A0 + L.look + L.mouse, d0 = [Math.cos(a), Math.sin(a)];
-    const dir = norm([lerp(d0[0], DF[0], L.face), lerp(d0[1], DF[1], L.face)]);
-    const len = lerp(150, 36, L.face), C = P(H, dir, len), u = [dir[1], -dir[0]];
-    const rx = 100, ry = lerp(56, 100, L.face);
-    const bulbC = P(C, dir, -ry * .18 * (1 - L.face));
-    return { dir, len, C, u, rx, ry, bulbC };
+  const H = [334, 278], LEN = 150, NECK = 46, D2R = Math.PI / 180;
+  // perfil de paraboloide: trasera redondeada y boca ancha, como la campana de la Luxo; cuello fino detrás
+  const radius = s => s < -30 ? 16 : 104 * Math.pow(Math.sin(Math.PI / 2 * Math.max(0, s + 30) / (LEN + 30)), .8) + 4 * Math.max(0, (s - LEN * .8) / (LEN * .2));
+  const clamp01 = gsap.utils.clamp(0, 1), f = n => n.toFixed(1);
+  const L = { az: -50, el: 64, mx: 0, my: 0, on: 0 };
+  const axis = (az, el) => { az *= D2R; el *= D2R; return [Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)]; };
+  const cross = (u, v) => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+  const nrm = v => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); };
+  const hull = pts => {   // envolvente convexa (cadena monótona)
+    pts.sort((p, r) => p[0] - r[0] || p[1] - r[1]);
+    const side = (o, p, r) => (p[0] - o[0]) * (r[1] - o[1]) - (p[1] - o[1]) * (r[0] - o[0]);
+    const lo = [], up = [];
+    for (const p of pts) { while (lo.length > 1 && side(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length > 1 && side(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    return lo.slice(0, -1).concat(up.slice(0, -1));
+  };
+  const frame = (az, el) => {
+    const a = axis(az, el);
+    let e1 = Math.abs(a[2]) > .999 ? [1, 0, 0] : nrm(cross(a, [0, 0, 1]));
+    const e2 = nrm(cross(a, e1));
+    const proj = s => [H[0] + a[0] * s, H[1] + a[1] * s];
+    const pa = Math.hypot(a[0], a[1]);
+    const m = pa < 1e-3 ? [1, 0] : [-a[1] / pa, a[0] / pa];   // eje mayor de las elipses proyectadas
+    return { a, e1, e2, proj, m, rot: Math.atan2(m[1], m[0]) / D2R };
   };
   const render = () => {
-    const { dir, len, C, u, rx, ry, bulbC } = geo();
-    const rot = Math.atan2(u[1], u[0]) * 180 / Math.PI;
-    const P1 = P(C, u, rx), P2 = P(C, u, -rx), Q = P(H, dir, -lerp(16, 4, L.face)), w = lerp(46, 82, L.face);
-    const K1 = P(P1, dir, -len * .7), K2 = P(Q, u, w), K3 = P(Q, u, -w), K4 = P(P2, dir, -len * .7);
-    body.setAttribute('d', `M${f(P1[0])} ${f(P1[1])}C${f(K1[0])} ${f(K1[1])} ${f(K2[0])} ${f(K2[1])} ${f(Q[0])} ${f(Q[1])}C${f(K3[0])} ${f(K3[1])} ${f(K4[0])} ${f(K4[1])} ${f(P2[0])} ${f(P2[1])}A${rx} ${f(ry)} ${f(rot)} 0 0 ${f(P1[0])} ${f(P1[1])}Z`);
-    for (const el of [mouth, rim]) { el.setAttribute('cx', f(C[0])); el.setAttribute('cy', f(C[1])); el.setAttribute('rx', rx); el.setAttribute('ry', f(ry)); el.setAttribute('transform', `rotate(${f(rot)} ${f(C[0])} ${f(C[1])})`); }
-    const br = lerp(44, 56, L.face);
-    bulb.setAttribute('cx', f(bulbC[0])); bulb.setAttribute('cy', f(bulbC[1])); bulb.setAttribute('r', f(br));
-    glow.setAttribute('cx', f(bulbC[0])); glow.setAttribute('cy', f(bulbC[1]));
-    spec.setAttribute('cx', f(bulbC[0] - br * .32)); spec.setAttribute('cy', f(bulbC[1] - br * .32));
-    // ranuras de ventilación en la parte trasera de la campana
-    let vd = ''; const V = P(Q, dir, len * .32);
-    for (let k = -1; k <= 1; k++) { const c = P(V, u, k * 17), s1 = P(c, dir, -7), s2 = P(c, dir, 7); vd += `M${f(s1[0])} ${f(s1[1])}L${f(s2[0])} ${f(s2[1])}`; }
-    ventPath.setAttribute('d', vd); vents.setAttribute('opacity', f(clamp(1 - L.face * 1.8)));
-    // haz de luz
-    const far = 820, F1 = P(P(P1, dir, far), u, far * .42), F2 = P(P(P2, dir, far), u, -far * .42);
+    const az = L.az + L.mx, el = L.el + L.my;
+    const { a, e1, e2, proj, m, rot } = frame(az, el);
+    // silueta de la campana: envolvente de sus aros proyectados
+    const pts = [];
+    for (let i = 0; i <= 26; i++) {
+      const s = -NECK + (LEN + NECK) * i / 26, r = radius(s), c = proj(s);
+      for (let j = 0; j < 40; j++) { const ph = j / 40 * Math.PI * 2, cx = Math.cos(ph), sy = Math.sin(ph); pts.push([c[0] + r * (cx * e1[0] + sy * e2[0]), c[1] + r * (cx * e1[1] + sy * e2[1])]); }
+    }
+    const h = hull(pts);
+    body.setAttribute('d', 'M' + h.map(p => f(p[0]) + ' ' + f(p[1])).join('L') + 'Z');
+    // sombreado metálico perpendicular al eje, con la luz arriba a la izquierda
+    const mid = proj(LEN * .55); let g = m; if (g[0] + g[1] > 0) g = [-g[0], -g[1]];
+    shadeGrad.setAttribute('x1', f(mid[0] + g[0] * 120)); shadeGrad.setAttribute('y1', f(mid[1] + g[1] * 120));
+    shadeGrad.setAttribute('x2', f(mid[0] - g[0] * 120)); shadeGrad.setAttribute('y2', f(mid[1] - g[1] * 120));
+    // costura del cuello y ranuras de ventilación, solo en la cara visible
+    const surf = (s, ph) => { const r = radius(s), c = proj(s), n = [Math.cos(ph) * e1[0] + Math.sin(ph) * e2[0], Math.cos(ph) * e1[1] + Math.sin(ph) * e2[1], Math.cos(ph) * e1[2] + Math.sin(ph) * e2[2]]; return { p: [c[0] + r * n[0], c[1] + r * n[1]], n }; };
+    let sd = '', pen = false;
+    for (let j = 0; j <= 60; j++) { const k = surf(-30 + 0.001 + 26, j / 60 * Math.PI * 2); if (k.n[2] > .02) { sd += (pen ? 'L' : 'M') + f(k.p[0]) + ' ' + f(k.p[1]); pen = true; } else pen = false; }
+    seam.setAttribute('d', sd);
+    let best = 0, bv = -9;
+    for (let j = 0; j < 72; j++) { const ph = j / 72 * Math.PI * 2, k = surf(LEN * .2, ph), v = k.n[2] - k.n[1] * .8; if (v > bv) { bv = v; best = ph; } }
+    let vd = ''; let vis = 0;
+    for (const off of [-.42, 0, .42]) { const k1 = surf(LEN * .12, best + off), k2 = surf(LEN * .27, best + off); if (k1.n[2] > .12) { vd += `M${f(k1.p[0])} ${f(k1.p[1])}L${f(k2.p[0])} ${f(k2.p[1])}`; vis = Math.max(vis, k1.n[2]); } }
+    vents.setAttribute('d', vd); vents.setAttribute('opacity', f(clamp01(vis * 2.2) * clamp01((1 - a[2]) * 3)));
+    // boca, interior y bombilla
+    const Cm = proj(LEN), R = radius(LEN), ry = Math.max(1, R * Math.abs(a[2]));
+    for (const el2 of [mouth, rim, clip]) { el2.setAttribute('cx', f(Cm[0])); el2.setAttribute('cy', f(Cm[1])); el2.setAttribute('rx', f(R)); el2.setAttribute('ry', f(ry)); el2.setAttribute('transform', `rotate(${f(rot)} ${f(Cm[0])} ${f(Cm[1])})`); }
+    const showMouth = a[2] > 0 ? 1 : 0;
+    mouth.setAttribute('opacity', showMouth); rim.setAttribute('opacity', showMouth);
+    const B = proj(LEN * .64), br = 50;
+    bulb.setAttribute('cx', f(B[0])); bulb.setAttribute('cy', f(B[1])); bulb.setAttribute('r', br);
+    glow.setAttribute('cx', f(B[0])); glow.setAttribute('cy', f(B[1]));
+    spec.setAttribute('cx', f(B[0] - br * .32)); spec.setAttribute('cy', f(B[1] - br * .34));
+    bulb.setAttribute('opacity', f((.2 + .8 * L.on) * showMouth)); glow.setAttribute('opacity', f(L.on * showMouth)); spec.setAttribute('opacity', f((.3 + .7 * L.on) * showMouth));
+    // haz de luz: se apaga a medida que la lámpara apunta a cámara
+    const pa = Math.hypot(a[0], a[1]) || 1, d = [a[0] / pa, a[1] / pa], far = 820;
+    const P1 = [Cm[0] + m[0] * R, Cm[1] + m[1] * R], P2 = [Cm[0] - m[0] * R, Cm[1] - m[1] * R];
+    const F1 = [P1[0] + d[0] * far + m[0] * far * .42, P1[1] + d[1] * far + m[1] * far * .42], F2 = [P2[0] + d[0] * far - m[0] * far * .42, P2[1] + d[1] * far - m[1] * far * .42];
     beam.setAttribute('d', `M${f(P1[0])} ${f(P1[1])}L${f(F1[0])} ${f(F1[1])}L${f(F2[0])} ${f(F2[1])}L${f(P2[0])} ${f(P2[1])}Z`);
-    beamGrad.setAttribute('x1', f(C[0])); beamGrad.setAttribute('y1', f(C[1])); const G = P(C, dir, far); beamGrad.setAttribute('x2', f(G[0])); beamGrad.setAttribute('y2', f(G[1]));
-    const light = L.on * (1 - L.face);
+    beamGrad.setAttribute('x1', f(Cm[0])); beamGrad.setAttribute('y1', f(Cm[1])); beamGrad.setAttribute('x2', f(Cm[0] + d[0] * far)); beamGrad.setAttribute('y2', f(Cm[1] + d[1] * far));
+    const light = L.on * clamp01((1 - a[2]) * 1.7);
     beam.setAttribute('opacity', f(light)); pool.setAttribute('opacity', f(light));
-    bulb.setAttribute('opacity', f(.18 + .82 * L.on)); glow.setAttribute('opacity', f(L.on)); spec.setAttribute('opacity', f(.3 + .7 * L.on));
   };
   render();
+  // entrada: mira al suelo, se enciende con parpadeo y levanta la cabeza con un rebote suave
   lampIntro = () => gsap.timeline()
-    .to(L, { look: 0, duration: 1.8, ease: 'elastic.out(1, .4)' }, 0)
-    .to(L, { keyframes: [{ on: .9, duration: .06 }, { on: .1, duration: .08 }, { on: 1, duration: .05 }, { on: .35, duration: .1 }, { on: 1, duration: .14 }] }, .6);
+    .to(L, { keyframes: [{ on: .9, duration: .06 }, { on: .1, duration: .08 }, { on: 1, duration: .05 }, { on: .35, duration: .1 }, { on: 1, duration: .14 }] }, .2)
+    .to(L, { el: 30, az: -62, duration: 1.9, ease: 'elastic.out(1, .55)' }, .55);
   let zooming = false;
-  const mouse = gsap.quickTo(L, 'mouse', { duration: 1.1, ease: 'power3' });
+  const mx = gsap.quickTo(L, 'mx', { duration: 1.4, ease: 'power3' }), my = gsap.quickTo(L, 'my', { duration: 1.4, ease: 'power3' });
   hero.addEventListener('pointermove', e => {
     if (zooming) return;
     const b = box.getBoundingClientRect();
-    const dx = (e.clientX - (b.left + b.width * .55)) / innerWidth, dy = (e.clientY - (b.top + b.height * .4)) / innerHeight;
-    mouse(gsap.utils.clamp(-.32, .32, -dx * .9 + dy * .5));
+    const dx = (e.clientX - (b.left + b.width * .5)) / innerWidth, dy = (e.clientY - (b.top + b.height * .4)) / innerHeight;
+    mx(gsap.utils.clamp(-14, 22, dx * 40)); my(gsap.utils.clamp(-14, 14, dy * 30));
   });
-  hero.addEventListener('pointerleave', () => { if (!zooming) mouse(0); });
-  // líneas topográficas alrededor de la bombilla
+  hero.addEventListener('pointerleave', () => { if (!zooming) { mx(0); my(0); } });
   const topoPaths = [];
   const sizeTopo = () => { topo.setAttribute('viewBox', `0 0 ${hero.clientWidth} ${hero.clientHeight}`); if (!topoPaths.length) for (let k = 0; k < 14; k++) { const p = document.createElementNS(NS, 'path'); topo.append(p); topoPaths.push(p); } };
   if (topo) { sizeTopo(); addEventListener('resize', sizeTopo); }
-  const bulbPos = () => { const r = bulb.getBoundingClientRect(), h = hero.getBoundingClientRect(); return [r.left + r.width / 2 - h.left, r.top + r.height / 2 - h.top]; };
+  const bulbPos = () => { const r = bulb.getBoundingClientRect(), hr = hero.getBoundingClientRect(); return [r.left + r.width / 2 - hr.left, r.top + r.height / 2 - hr.top]; };
   gsap.ticker.add(() => {
     render();
     if (!topo || zooming) return;
-    const [X, Y] = bulbPos(), t = gsap.ticker.time, m = Math.min(hero.clientWidth, hero.clientHeight);
+    const [X, Y] = bulbPos(), t = gsap.ticker.time, mm = Math.min(hero.clientWidth, hero.clientHeight);
     topoPaths.forEach((p, k) => {
-      const rk = m * .14 + k * m * .075; let d = '';
-      for (let j = 0; j <= 72; j++) { const a = j / 72 * Math.PI * 2, rr = rk * (1 + .09 * Math.sin(3 * a + k * .7 + t * .25) + .05 * Math.sin(5 * a - k + t * .18)); d += (j ? 'L' : 'M') + (X + rr * Math.cos(a) * 1.25).toFixed(1) + ' ' + (Y + rr * Math.sin(a)).toFixed(1); }
-      p.setAttribute('d', d + 'Z');
+      const rk = mm * .14 + k * mm * .075; let dd = '';
+      for (let j = 0; j <= 72; j++) { const an = j / 72 * Math.PI * 2, rr = rk * (1 + .09 * Math.sin(3 * an + k * .7 + t * .25) + .05 * Math.sin(5 * an - k + t * .18)); dd += (j ? 'L' : 'M') + (X + rr * Math.cos(an) * 1.25).toFixed(1) + ' ' + (Y + rr * Math.sin(an)).toFixed(1); }
+      p.setAttribute('d', dd + 'Z');
     });
   });
-  // origen del zoom: la bombilla cuando la lámpara ya mira de frente
-  const front = (() => { const s = { ...L }; L.face = 1; L.look = 0; L.mouse = 0; const g = geo(); Object.assign(L, s); return g.bulbC; })();
+  // origen del zoom: la bombilla con la lámpara mirando de frente
+  const front = frame(0, 6).proj(LEN * .64);
   const origin = `${(front[0] / 600 * 100).toFixed(2)}% ${(front[1] / 760 * 100).toFixed(2)}%`;
   const setFlash = r => { const [X, Y] = bulbPos(); flash.style.setProperty('--fx', X + 'px'); flash.style.setProperty('--fy', Y + 'px'); flash.style.setProperty('--fr', r + 'px'); };
   const fr = { v: 0 };
   const tl = gsap.timeline({
     scrollTrigger: {
-      trigger: hero, start: 'top top', end: '+=180%', pin: true, scrub: 1, anticipatePin: 1,
-      onEnter: () => { zooming = true; mouse(0); }, onLeaveBack: () => { zooming = false; },
+      trigger: hero, start: 'top top', end: '+=200%', pin: true, scrub: 1.2, anticipatePin: 1,
+      onEnter: () => { zooming = true; mx(0); my(0); }, onLeaveBack: () => { zooming = false; },
       onUpdate: self => { document.body.classList.toggle('theme-light', self.progress > .93); }
     }
   });
   tl.to('.hero2__mark, .hero2__slogan, .hero2__meta, .hero2__desc, .hero2__cta', { opacity: 0, y: -50, filter: 'blur(10px)', stagger: .03, duration: .25, ease: 'power2.in' }, 0)
     .to(topo, { opacity: 0, duration: .25 }, 0)
-    // 1) gira la cabeza hasta mirarte, con un pequeño rebote
-    .to(L, { face: 1, look: 0, mouse: 0, on: 1, duration: .34, ease: 'back.out(1.5)' }, .02)
-    // 2) la cámara entra en la bombilla
-    .to(box, { scale: 28, transformOrigin: origin, duration: .62, ease: 'power3.in' }, .38)
-    // 3) la luz lo llena todo de blanco
-    .to(fr, { v: Math.hypot(innerWidth, innerHeight) * 1.4, duration: .4, ease: 'power2.in', onUpdate: () => setFlash(fr.v) }, .6)
-    .to(flash, { opacity: 1, duration: .2, ease: 'none' }, .6);
+    .to(L, { mx: 0, my: 0, on: 1, duration: .1 }, 0)
+    // el giro, como en Pixar: anticipa bajando un poco, gira con aceleración natural y se asienta con un rebote corto
+    .to(L, { az: -70, el: 38, duration: .08, ease: 'sine.inOut' }, .02)
+    .to(L, { az: 4, el: 2, duration: .22, ease: 'power3.inOut' }, .1)
+    .to(L, { az: 0, el: 6, duration: .1, ease: 'sine.out' }, .32)
+    // la cámara entra en la bombilla
+    .to(box, { scale: 28, transformOrigin: origin, duration: .58, ease: 'power3.in' }, .42)
+    // la luz lo llena todo de blanco
+    .to(fr, { v: Math.hypot(innerWidth, innerHeight) * 1.4, duration: .38, ease: 'power2.in', onUpdate: () => setFlash(fr.v) }, .62)
+    .to(flash, { opacity: 1, duration: .2, ease: 'none' }, .62);
 }
 
 function bigrows() {

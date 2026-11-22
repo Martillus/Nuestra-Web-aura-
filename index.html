@@ -78,7 +78,8 @@
       <defs>
         <linearGradient id="lm-metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6fbfd"/><stop offset=".5" stop-color="#c9d6e4"/><stop offset="1" stop-color="#8095b6"/></linearGradient>
         <linearGradient id="lm-bar" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#eef5fa"/><stop offset=".6" stop-color="#b9c8da"/><stop offset="1" stop-color="#7a8fb1"/></linearGradient>
-        <linearGradient id="lm-shade" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".45" stop-color="#d6e1ec"/><stop offset="1" stop-color="#7f95b7"/></linearGradient>
+        <linearGradient id="lm-shade" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6c81a6"/><stop offset=".18" stop-color="#b7c6d9"/><stop offset=".42" stop-color="#ffffff"/><stop offset=".58" stop-color="#e7eef5"/><stop offset=".86" stop-color="#9aaecb"/><stop offset="1" stop-color="#5f7499"/></linearGradient>
+        <clipPath id="lm-mouthclip"><ellipse class="lamp__clip"/></clipPath>
         <radialGradient id="lm-inner" cx=".5" cy=".5" r=".62"><stop offset="0" stop-color="#fffdf2"/><stop offset=".45" stop-color="#f7f2dc"/><stop offset="1" stop-color="#a9b4c8"/></radialGradient>
         <radialGradient id="lm-bulb" cx=".42" cy=".38" r=".62"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#fffbe8"/><stop offset="1" stop-color="#ffe7a3"/></radialGradient>
         <radialGradient id="lm-pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fffbe9" stop-opacity=".42"/><stop offset="1" stop-color="#fffbe9" stop-opacity="0"/></radialGradient>
@@ -111,12 +112,15 @@
       <path class="lamp__beam" fill="url(#lm-beam)"/>
       <circle class="lamp__hinge" cx="334" cy="278" r="15" fill="url(#lm-metal)" stroke="#6c81a6" stroke-width="2"/>
       <g class="lamp__head">
-        <path class="lamp__body" fill="url(#lm-shade)" stroke="#8095b6" stroke-width="1.5"/>
-        <g class="lamp__vents" fill="#7f95b7"></g>
+        <path class="lamp__body" fill="url(#lm-shade)" stroke="#7489ad" stroke-width="1.2" stroke-linejoin="round"/>
+        <path class="lamp__seam" stroke="#8ea2c2" stroke-width="1.6" fill="none"/>
+        <path class="lamp__vents" stroke="#6c81a6" stroke-width="5" stroke-linecap="round" fill="none"/>
         <ellipse class="lamp__mouth" fill="url(#lm-inner)"/>
-        <circle class="lamp__glow" r="80" fill="#fff4cc" filter="url(#lm-blur)"/>
-        <circle class="lamp__bulb" fill="url(#lm-bulb)"/>
-        <circle class="lamp__spec" r="9" fill="#fff" filter="url(#lm-soft)"/>
+        <g clip-path="url(#lm-mouthclip)">
+          <circle class="lamp__glow" r="80" fill="#fff4cc" filter="url(#lm-blur)"/>
+          <circle class="lamp__bulb" fill="url(#lm-bulb)"/>
+          <circle class="lamp__spec" r="9" fill="#fff" filter="url(#lm-soft)"/>
+        </g>
         <ellipse class="lamp__rim" stroke="#f6fbfd" stroke-width="6"/>
       </g>
     </svg>
