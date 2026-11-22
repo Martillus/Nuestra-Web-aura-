@@ -430,19 +430,12 @@ function lamp() {
     beam.setAttribute('opacity', f(light)); pool.setAttribute('opacity', f(light));
   };
   render();
-  // entrada: mira al suelo, se enciende con parpadeo y levanta la cabeza con un rebote suave
-  lampIntro = () => gsap.timeline()
-    .to(L, { keyframes: [{ on: .9, duration: .06 }, { on: .1, duration: .08 }, { on: 1, duration: .05 }, { on: .35, duration: .1 }, { on: 1, duration: .14 }] }, .2)
-    .to(L, { el: 30, az: -62, duration: 1.9, ease: 'elastic.out(1, .55)' }, .55);
+  // sin entrada automática: espera apagada y mirando al suelo; todo ocurre con el scroll.
+  // (en modo quieto, ?quieto, se muestra encendida en su pose de reposo)
+  lampIntro = () => gsap.timeline().set(L, { on: 1, el: 30, az: -62 });
   let zooming = false;
   const mx = gsap.quickTo(L, 'mx', { duration: 1.4, ease: 'power3' }), my = gsap.quickTo(L, 'my', { duration: 1.4, ease: 'power3' });
-  hero.addEventListener('pointermove', e => {
-    if (zooming) return;
-    const b = box.getBoundingClientRect();
-    const dx = (e.clientX - (b.left + b.width * .5)) / innerWidth, dy = (e.clientY - (b.top + b.height * .4)) / innerHeight;
-    mx(gsap.utils.clamp(-14, 22, dx * 40)); my(gsap.utils.clamp(-14, 14, dy * 30));
-  });
-  hero.addEventListener('pointerleave', () => { if (!zooming) { mx(0); my(0); } });
+
   const topoPaths = [];
   const sizeTopo = () => { topo.setAttribute('viewBox', `0 0 ${hero.clientWidth} ${hero.clientHeight}`); if (!topoPaths.length) for (let k = 0; k < 14; k++) { const p = document.createElementNS(NS, 'path'); topo.append(p); topoPaths.push(p); } };
   if (topo) { sizeTopo(); addEventListener('resize', sizeTopo); }
@@ -464,23 +457,27 @@ function lamp() {
   const fr = { v: 0 };
   const tl = gsap.timeline({
     scrollTrigger: {
-      trigger: hero, start: 'top top', end: '+=200%', pin: true, scrub: 1.2, anticipatePin: 1,
+      trigger: hero, start: 'top top', end: '+=240%', pin: true, scrub: 1.2, anticipatePin: 1,
       onEnter: () => { zooming = true; mx(0); my(0); }, onLeaveBack: () => { zooming = false; },
-      onUpdate: self => { document.body.classList.toggle('theme-light', self.progress > .93); }
+      onUpdate: self => { document.body.classList.toggle('theme-light', self.progress > .95); }
     }
   });
-  tl.to('.hero2__mark, .hero2__slogan, .hero2__meta, .hero2__desc, .hero2__cta', { opacity: 0, y: -50, filter: 'blur(10px)', stagger: .03, duration: .25, ease: 'power2.in' }, 0)
-    .to(topo, { opacity: 0, duration: .25 }, 0)
-    .to(L, { mx: 0, my: 0, on: 1, duration: .1 }, 0)
-    // el giro, como en Pixar: anticipa bajando un poco, gira con aceleración natural y se asienta con un rebote corto
-    .to(L, { az: -70, el: 38, duration: .08, ease: 'sine.inOut' }, .02)
-    .to(L, { az: 4, el: 2, duration: .22, ease: 'power3.inOut' }, .1)
-    .to(L, { az: 0, el: 6, duration: .1, ease: 'sine.out' }, .32)
-    // la cámara entra en la bombilla
-    .to(box, { scale: 28, transformOrigin: origin, duration: .58, ease: 'power3.in' }, .42)
-    // la luz lo llena todo de blanco
-    .to(fr, { v: Math.hypot(innerWidth, innerHeight) * 1.4, duration: .38, ease: 'power2.in', onUpdate: () => setFlash(fr.v) }, .62)
-    .to(flash, { opacity: 1, duration: .2, ease: 'none' }, .62);
+  tl
+    // 1) se enciende con un parpadeo
+    .to(L, { keyframes: [{ on: .85, duration: .025 }, { on: .08, duration: .025 }, { on: 1, duration: .02 }, { on: .3, duration: .03 }, { on: 1, duration: .04 }] }, .01)
+    // 2) levanta la cabeza del suelo
+    .to(L, { az: -62, el: 30, duration: .16, ease: 'power2.out' }, .06)
+    .to('.hero2__mark, .hero2__slogan, .hero2__meta, .hero2__desc, .hero2__cta', { opacity: 0, y: -50, filter: 'blur(10px)', stagger: .02, duration: .18, ease: 'power2.in' }, .2)
+    .to(topo, { opacity: 0, duration: .2 }, .2)
+    // 3) el giro, como en Pixar: anticipa, gira con aceleración natural y se asienta con un rebote corto
+    .to(L, { az: -70, el: 38, duration: .06, ease: 'sine.inOut' }, .24)
+    .to(L, { az: 4, el: 2, duration: .17, ease: 'power3.inOut' }, .3)
+    .to(L, { az: 0, el: 6, duration: .07, ease: 'sine.out' }, .47)
+    // 4) la cámara entra en la bombilla
+    .to(box, { scale: 28, transformOrigin: origin, duration: .46, ease: 'power3.in' }, .54)
+    // 5) la luz lo llena todo de blanco
+    .to(fr, { v: Math.hypot(innerWidth, innerHeight) * 1.4, duration: .3, ease: 'power2.in', onUpdate: () => setFlash(fr.v) }, .7)
+    .to(flash, { opacity: 1, duration: .16, ease: 'none' }, .7);
 }
 
 function bigrows() {
@@ -490,8 +487,8 @@ function bigrows() {
       gsap.fromTo(row, { xPercent: dir < 0 ? 0 : -30 }, { xPercent: dir < 0 ? -30 : 0, ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: 1 } });
     });
     const img = $('.bigrows__img', sec);
-    gsap.fromTo(img, { rotate: -8, scale: .7, clipPath: 'inset(30% 10% 30% 10% round 24px)' }, { rotate: 4, scale: 1, clipPath: 'inset(0% 0% 0% 0% round 24px)', ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'center center', scrub: 1 } });
-    gsap.fromTo($('img', img), { yPercent: -12 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: 1 } });
+    if (img) gsap.fromTo(img, { rotate: -8, scale: .7, clipPath: 'inset(30% 10% 30% 10% round 24px)' }, { rotate: 4, scale: 1, clipPath: 'inset(0% 0% 0% 0% round 24px)', ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'center center', scrub: 1 } });
+    if (img) gsap.fromTo($('img', img), { yPercent: -12 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: 1 } });
     const path = $('.bigrows__scribble path', sec);
     if (path) {
       const L = path.getTotalLength();
@@ -510,7 +507,7 @@ function intro() {
     tl.from('.hero2__word span', { yPercent: 105, opacity: 0, filter: 'blur(18px)', duration: 1.6, stagger: .08 }, 0)
       .from('.hero2__sub i', { scaleX: 0, duration: 1.4 }, .5)
       .from('.hero2__sub span', { opacity: 0, letterSpacing: '1em', duration: 1.6 }, .5)
-      .add(() => lampIntro && lampIntro(), .2);
+;
     $$('[data-intro-lines]').forEach(p => { const s = SplitText.create(p, { type: 'lines', mask: 'lines' }); tl.from(s.lines, { yPercent: 110, duration: 1.4, stagger: .1 }, .45); });
   }
   $$('.hero__title h1, .phero h1').forEach(h => {
@@ -575,6 +572,8 @@ function shaders() {
 }
 
 /* ---------------- arranque ---------------- */
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+if (!location.hash) window.scrollTo(0, 0);
 (async function boot() {
   root.classList.add('js');
   bindTransitions(); cursor(); misc(); clock(); faq(); form();
