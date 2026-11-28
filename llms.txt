@@ -23,6 +23,7 @@
 
 - [Inicio](https://focowebstudio.com/): presentación del estudio.
 - [Servicios](https://focowebstudio.com/servicios.html): qué incluye cada web y preguntas frecuentes.
+- [Web para peluquerías y barberías](https://focowebstudio.com/web-para-peluquerias.html): qué incluye una web para este tipo de negocio y preguntas frecuentes.
 - [Proceso](https://focowebstudio.com/proceso.html): los cuatro pasos, de la primera conversación a la publicación.
 - [Estudio](https://focowebstudio.com/estudio.html): quiénes somos y para quién trabajamos.
 - [Contacto](https://focowebstudio.com/contacto.html): pedir presupuesto.
