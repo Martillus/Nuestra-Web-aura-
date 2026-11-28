@@ -1,0 +1,28 @@
+# Foco Web Studio
+
+> Estudio de diseño web en España. Webs a medida, sin plantillas, para negocios pequeños, publicadas en 5 a 10 días. Trabajamos en remoto en toda España.
+
+## Datos clave
+
+- Qué hacemos: diseño y desarrollo de webs a medida, con animaciones y pensadas para el móvil.
+- Para quién: negocios pequeños en España, como barberías, peluquerías, gimnasios, cafeterías, restaurantes, clínicas y tiendas.
+- Plazo: de 5 a 10 días desde que empezamos.
+- Precio: presupuesto sin compromiso según lo que necesite cada negocio. Dominio y hosting (en Vercel) incluidos.
+- Cómo trabajamos: en remoto, por correo, llamada o videollamada. El cliente ve el diseño antes de publicarlo.
+- Contacto: focowebstudio@gmail.com o el formulario de https://focowebstudio.com/contacto.html
+
+## Servicios
+
+- Diseño web a medida: identidad visual propia, sin plantillas.
+- Animación y movimiento: transiciones y efectos fluidos, también en el móvil.
+- Versión móvil: adaptada a móvil, tablet y ordenador.
+- Contacto y reservas: WhatsApp, llamada, formularios, enlace a sistema de reservas y mapa.
+- Dominio y hosting: incluidos, con conexión segura (https).
+
+## Páginas
+
+- [Inicio](https://focowebstudio.com/): presentación del estudio.
+- [Servicios](https://focowebstudio.com/servicios.html): qué incluye cada web y preguntas frecuentes.
+- [Proceso](https://focowebstudio.com/proceso.html): los cuatro pasos, de la primera conversación a la publicación.
+- [Estudio](https://focowebstudio.com/estudio.html): quiénes somos y para quién trabajamos.
+- [Contacto](https://focowebstudio.com/contacto.html): pedir presupuesto.

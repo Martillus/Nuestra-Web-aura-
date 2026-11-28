@@ -33,7 +33,10 @@ const sitemap = [
 ];
 writeFileSync('sitemap.xml', sitemap.join(`
 `));
-writeFileSync('robots.txt', `User-agent: *
+// Los asistentes de IA y sus buscadores pueden leer la web
+const bots = ['OAI-SearchBot', 'ChatGPT-User', 'GPTBot', 'Claude-SearchBot', 'Claude-User', 'ClaudeBot', 'PerplexityBot', 'Perplexity-User', 'Google-Extended', 'Applebot-Extended', '*'];
+writeFileSync('robots.txt', `${bots.map(b => `User-agent: ${b}`).join(`
+`)}
 Allow: /
 
 Sitemap: https://focowebstudio.com/sitemap.xml
