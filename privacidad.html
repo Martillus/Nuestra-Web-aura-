@@ -79,7 +79,9 @@
     <h1 class="d-l" data-split="lines">Privacidad</h1>
     <p>Esta página explica qué hacemos con los datos que nos mandas desde el formulario de contacto de esta web.</p>
     <h2>Qué datos recogemos</h2>
-    <p>Tu nombre, tu correo, tu tipo de negocio y, si los escribes, tu teléfono y tu mensaje. No usamos cookies de seguimiento ni de publicidad. Medimos las visitas de forma anónima y sin cookies con Vercel Analytics.</p>
+    <p>Tu nombre, tu correo, tu tipo de negocio y, si los escribes, tu teléfono y tu mensaje. Medimos las visitas de forma anónima y sin cookies con Vercel Analytics.</p>
+    <h2>Cookies</h2>
+    <p>Solo si pulsas «Aceptar» cargamos Google Tag Manager y Google Analytics, un servicio de Google que usa cookies (como _ga) para saber qué páginas se visitan y cómo se usa la web. Si pulsas «Rechazar», no se cargan. Tu elección se guarda en tu navegador y puedes cambiarla cuando quieras con el botón «Cookies» del pie de página.</p>
     <h2>Para qué los usamos</h2>
     <p>Solo para responderte y prepararte el presupuesto que pides. No los vendemos ni los compartimos con nadie para publicidad.</p>
     <h2>Quién los trata</h2>
@@ -123,6 +125,7 @@
     <div class="footer__legal">
       <span>© <span data-year>2026</span> Foco Web Studio</span>
       <a class="link-u" href="privacidad.html">Privacidad</a>
+      <button class="link-u" type="button" data-consent-open>Cookies</button>
       <a class="to-top" href="#main" data-top><span>Volver arriba</span><i><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M1 7h11M7.5 2.5 12 7l-4.5 4.5"/></svg></i></a>
     </div>
   </div>
@@ -135,5 +138,58 @@
 <script type="module" src="js/main.js"></script>
 <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
 <script defer src="/_vercel/insights/script.js"></script>
+
+<!-- Aviso de cookies: Google Tag Manager solo se carga si el visitante acepta -->
+<style>
+.consent { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 115; max-width: 520px; padding: 20px 22px; border-radius: 20px; background: #00064e; color: #effcfd; border: 1px solid rgba(239,252,253,.18); box-shadow: 0 24px 60px -20px rgba(0,0,0,.6); font: 400 15px/1.5 Satoshi, system-ui, sans-serif; }
+.consent[hidden] { display: none; }
+.consent p { margin: 0 0 14px; }
+.consent a { color: inherit; text-decoration: underline; }
+.consent div { display: flex; gap: 10px; }
+.consent button { flex: 1; height: 44px; border-radius: 999px; border: 1px solid #effcfd; background: transparent; color: #effcfd; font: 500 15px/1 Satoshi, system-ui, sans-serif; }
+.consent button:hover, .consent button:focus-visible { background: #effcfd; color: #00064e; }
+</style>
+<div class="consent" role="dialog" aria-label="Aviso de cookies" hidden>
+  <p>¿Nos dejas usar cookies de Google Analytics para saber cómo se usa la web? <a href="privacidad.html">Más información</a></p>
+  <div><button type="button" data-consent="no">Rechazar</button><button type="button" data-consent="si">Aceptar</button></div>
+</div>
+<script>
+(function () {
+  var KEY = 'foco-cookies', ID = 'GTM-K43QXL2H';
+  var box = document.querySelector('.consent'), loaded = false;
+  function read() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+  function load() {
+    if (loaded) return;
+    loaded = true;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtm.js?id=' + ID;
+    document.head.appendChild(s);
+  }
+  function forget() {
+    var host = location.hostname.replace(/^www[.]/, '');
+    document.cookie.split(';').forEach(function (c) {
+      var n = c.split('=')[0].trim();
+      if (n.indexOf('_ga') !== 0) return;
+      document.cookie = n + '=; Max-Age=0; path=/';
+      document.cookie = n + '=; Max-Age=0; path=/; domain=.' + host;
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-consent-open]')) { box.hidden = false; return; }
+    var b = e.target.closest('[data-consent]');
+    if (!b) return;
+    var choice = b.getAttribute('data-consent');
+    try { localStorage.setItem(KEY, choice); } catch (err) {}
+    box.hidden = true;
+    if (choice === 'si') load();
+    else { forget(); if (loaded) location.reload(); }
+  });
+  if (read() === 'si') load();
+  else if (read() !== 'no') box.hidden = false;
+})();
+</script>
 </body>
 </html>
