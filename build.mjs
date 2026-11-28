@@ -8,7 +8,7 @@ for (const file of readdirSync('src/pages').filter(f => f.endsWith('.html'))) {
   const m = raw.match(/^<!--\s*(\{[\s\S]*?\})\s*-->\s*/);
   const meta = m ? JSON.parse(m[1]) : {};
   const content = m ? raw.slice(m[0].length) : raw;
-  const url = 'https://www.focowebstudio.com/' + (file === 'index.html' ? '' : file);
+  const url = 'https://focowebstudio.com/' + (file === 'index.html' ? '' : file);
   let html = layout
     .replaceAll('{{url}}', url)
     .replaceAll('{{title}}', meta.title || 'Foco Web Studio')
